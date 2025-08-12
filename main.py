@@ -4,82 +4,118 @@ import logging
 from dotenv import load_dotenv
 import os
 
-load_dotenv()
+# --- Load Environment Variables ---
+load_dotenv()  # Load from .env file
 token = os.getenv('DISCORD_TOKEN')
 
+# --- Error Handling for Missing Token ---
+if not token:
+    raise ValueError(
+        "Discord token not found! "
+        "Please set it in a .env file or environment variables."
+    )
+
+# --- Bot Setup ---
 handler = logging.FileHandler(filename='discord.log', encoding='utf-8', mode='w')
 intents = discord.Intents.default()
-intents.message_content = True
-intents.members = True
+intents.message_content = True  # Required for message events
+intents.members = True         # Required for on_member_join
 
 bot = commands.Bot(command_prefix='!', intents=intents)
 
-secret_role = "Gamer"
+# --- Constants ---
+SECRET_ROLE = "Gamer"  # UPPERCASE for constants
 
+# --- Events ---
 @bot.event
 async def on_ready():
-    print(f"We are ready to go in, {bot.user.name}")
+    print(f"Logged in as {bot.user.name} (ID: {bot.user.id})")
+    print("------")
 
 @bot.event
 async def on_member_join(member):
-    await member.send(f"Welcome to the server {member.name}")
+    try:
+        await member.send(f"Welcome to the server, {member.name}!")
+    except discord.Forbidden:
+        print(f"Could not DM {member.name} (DMs closed)")
 
 @bot.event
 async def on_message(message):
-    if message.author == bot.user:
+    if message.author == bot.user:  # Ignore self
         return
 
-    if "shit" in message.content.lower():
+    if "shit" in message.content.lower():  # Bad word filter
         await message.delete()
-        await message.channel.send(f"{message.author.mention} - dont use that word!")
+        await message.channel.send(
+            f"{message.author.mention} - Please avoid using that word!",
+            delete_after=5.0  # Auto-deletes after 5 sec
+        )
 
-    await bot.process_commands(message)
+    await bot.process_commands(message)  # Required for commands to work
 
+# --- Commands ---
 @bot.command()
 async def hello(ctx):
+    """Says hello to the user"""
     await ctx.send(f"Hello {ctx.author.mention}!")
 
 @bot.command()
 async def assign(ctx):
-    role = discord.utils.get(ctx.guild.roles, name=secret_role)
+    """Assigns the secret role to the user"""
+    role = discord.utils.get(ctx.guild.roles, name=SECRET_ROLE)
     if role:
         await ctx.author.add_roles(role)
-        await ctx.send(f"{ctx.author.mention} is now assigned to {secret_role}")
+        await ctx.send(f"{ctx.author.mention} is now a {SECRET_ROLE}!")
     else:
-        await ctx.send("Role doesn't exist")
+        await ctx.send(f"Role '{SECRET_ROLE}' not found.")
 
 @bot.command()
 async def remove(ctx):
-    role = discord.utils.get(ctx.guild.roles, name=secret_role)
+    """Removes the secret role from the user"""
+    role = discord.utils.get(ctx.guild.roles, name=SECRET_ROLE)
     if role:
         await ctx.author.remove_roles(role)
-        await ctx.send(f"{ctx.author.mention} has had the {secret_role} removed")
+        await ctx.send(f"{SECRET_ROLE} role removed from {ctx.author.mention}.")
     else:
-        await ctx.send("Role doesn't exist")
+        await ctx.send(f"Role '{SECRET_ROLE}' not found.")
 
 @bot.command()
-async def dm(ctx, *, msg):
-    await ctx.author.send(f"You said {msg}")
+async def dm(ctx, *, msg: str):
+    """Sends your message back to you via DM"""
+    await ctx.author.send(f"You said: {msg}")
+    await ctx.message.delete()  # Deletes the command message
 
 @bot.command()
 async def reply(ctx):
-    await ctx.reply("This is a reply to your message!")
+    """Replies to your message"""
+    await ctx.reply("This is a reply!")
 
 @bot.command()
-async def poll(ctx, *, question):
-    embed = discord.Embed(title="New Poll", description=question)
-    poll_message = await ctx.send(embed=embed)
-    await poll_message.add_reaction("👍")
-    await poll_message.add_reaction("👎")
+async def poll(ctx, *, question: str):
+    """Creates a simple yes/no poll"""
+    embed = discord.Embed(
+        title="📊 Poll",
+        description=question,
+        color=discord.Color.blue()
+    )
+    poll_msg = await ctx.send(embed=embed)
+    await poll_msg.add_reaction("👍")
+    await poll_msg.add_reaction("👎")
 
 @bot.command()
-@commands.has_role(secret_role)
+@commands.has_role(SECRET_ROLE)
 async def secret(ctx):
-    await ctx.send("Welcome to the club!")
+    """Secret command for special role"""
+    await ctx.send("🔐 Welcome to the secret club!")
 
 @secret.error
 async def secret_error(ctx, error):
     if isinstance(error, commands.MissingRole):
-        await ctx.send("You do not have permission to do that!")
+        await ctx.send("🚫 You don't have permission for this command!")
 
-bot.run(token, log_handler=handler, log_level=logging.DEBUG)
+# --- Run the Bot ---
+if __name__ == "__main__":
+    try:
+        bot.run(token, log_handler=handler, log_level=logging.DEBUG)
+    except discord.LoginFailure:
+        print("Invalid Discord token. Please check your .env file.")
