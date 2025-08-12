@@ -1,19 +1,6 @@
 import discord
 from discord.ext import commands
 import logging
-from dotenv import load_dotenv
-import os
-
-# --- Load Environment Variables ---
-load_dotenv()  # Load from .env file
-token = os.getenv('DISCORD_TOKEN')
-
-# --- Error Handling for Missing Token ---
-if not token:
-    raise ValueError(
-        "Discord token not found! "
-        "Please set it in a .env file or environment variables."
-    )
 
 # --- Bot Setup ---
 handler = logging.FileHandler(filename='discord.log', encoding='utf-8', mode='w')
@@ -25,6 +12,7 @@ bot = commands.Bot(command_prefix='!', intents=intents)
 
 # --- Constants ---
 SECRET_ROLE = "Gamer"  # UPPERCASE for constants
+TOKEN = "MTQwNDc5NDQwNzg4NjEzMTI0MA.G4Tjnq.tLCKEe0mdA2wTt4DBt1qcyRM5rSCv877Eq8JcU"  # Paste your token directly here
 
 # --- Events ---
 @bot.event
@@ -115,7 +103,10 @@ async def secret_error(ctx, error):
 
 # --- Run the Bot ---
 if __name__ == "__main__":
+    if not TOKEN or TOKEN == "YOUR_BOT_TOKEN_HERE":
+        raise ValueError("Please replace 'YOUR_BOT_TOKEN_HERE' with your actual bot token")
+    
     try:
-        bot.run(token, log_handler=handler, log_level=logging.DEBUG)
+        bot.run(TOKEN, log_handler=handler, log_level=logging.DEBUG)
     except discord.LoginFailure:
-        print("Invalid Discord token. Please check your .env file.")
+        print("Invalid Discord token. Please check your token.")
