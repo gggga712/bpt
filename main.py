@@ -12,7 +12,7 @@ bot = commands.Bot(command_prefix='!', intents=intents)
 
 # --- Constants ---
 SECRET_ROLE = "Gamer"  # UPPERCASE for constants
-TOKEN = "MTQwNDc5NDQwNzg4NjEzMTI0MA.G4Tjnq.tLCKEe0mdA2wTt4DBt1qcyRM5rSCv877Eq8JcU"  # Paste your token directly here
+TOKEN = "token"  # Paste your token directly here
 
 # --- Events ---
 @bot.event
@@ -110,3 +110,4 @@ if __name__ == "__main__":
         bot.run(TOKEN, log_handler=handler, log_level=logging.DEBUG)
     except discord.LoginFailure:
         print("Invalid Discord token. Please check your token.")
+
